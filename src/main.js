@@ -43,6 +43,19 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.target.set(0, 0.5, 0);
 
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(10, 10),
+  new THREE.MeshStandardMaterial({
+    color: 0xeeeeee,
+    metalness: 0.3,
+    roughness: 0.8,
+  })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.1;
+floor.receiveShadow = true;
+scene.add(floor);
+
 // === LOAD GUITAR ===
 const loader = new GLTFLoader();
 loader.load(
@@ -53,6 +66,10 @@ loader.load(
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+
+        if (child.geometry && child.geometry.attributes.normal) {
+          child.geometry.computeVertexNormals();
+        }
       }
     });
     scene.add(guitar);
