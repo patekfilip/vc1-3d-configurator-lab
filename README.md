@@ -3,6 +3,8 @@
 This is a small 3D bass configurator built with **Three.js** and **Vite**.  
 You can rotate the instrument, change colors, toggle parts, and adjust the environment using a built-in GUI panel.
 
+![Screenshot of the Bass Configurator](./screenshot.png)
+
 ---
 
 ## 🚀 How to Run the Project
