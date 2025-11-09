@@ -5,17 +5,17 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 let scene, camera, renderer, controls, gui;
 let guitar,
-  config = {};
+	config = {};
 
 // === INIT SCENE ===
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfcfcfc);
 
 camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
+	60,
+	window.innerWidth / window.innerHeight,
+	0.1,
+	1000
 );
 camera.position.set(0, 1, 2);
 
@@ -37,6 +37,12 @@ dir.position.set(2, 2, 2);
 dir.castShadow = true;
 scene.add(dir);
 
+// SECOND DIRECTIONAL LIGHT
+const dir2 = new THREE.DirectionalLight(0xffffff, 1.5);
+dir2.position.set(-2, 2, 2);  // opposite diagonal corner
+dir2.castShadow = true;
+scene.add(dir2);
+
 // === CONTROLS ===
 controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -44,12 +50,12 @@ controls.dampingFactor = 0.05;
 controls.target.set(0, 0.5, 0);
 
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(10, 10),
-  new THREE.MeshStandardMaterial({
-    color: 0xeeeeee,
-    metalness: 0.3,
-    roughness: 0.8,
-  })
+	new THREE.PlaneGeometry(10, 10),
+	new THREE.MeshStandardMaterial({
+		color: 0xeeeeee,
+		metalness: 0.3,
+		roughness: 0.8,
+	})
 );
 floor.rotation.x = -Math.PI / 2;
 floor.position.y = -0.1;
@@ -59,67 +65,118 @@ scene.add(floor);
 // === LOAD GUITAR ===
 const loader = new GLTFLoader();
 loader.load(
-  '/models/Guitar_Models.glb',
-  (gltf) => {
-    guitar = gltf.scene;
-    guitar.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
+	'/models/Guitar_Models.glb',
+	(gltf) => {
+		guitar = gltf.scene;
+		guitar.traverse((child) => {
+			if (child.isMesh) {
+				child.castShadow = true;
+				child.receiveShadow = true;
 
-        if (child.geometry && child.geometry.attributes.normal) {
-          child.geometry.computeVertexNormals();
-        }
-      }
-    });
-    scene.add(guitar);
-    initConfigUI(guitar);
-  },
-  (xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total) * 100}%`),
-  (err) => console.error(err)
+				if (child.geometry && child.geometry.attributes.normal) {
+					child.geometry.computeVertexNormals();
+				}
+			}
+		});
+		scene.add(guitar);
+		initConfigUI(guitar);
+	},
+	(xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total) * 100}%`),
+	(err) => console.error(err)
 );
 
 // === CONFIG + GUI ===
 function initConfigUI(model) {
-  // Example parts: adjust to your real node names from Blender
-  const body = model.getObjectByName('Body');
-  const pickguard = model.getObjectByName('Pickguard');
-  const pickguardMesh = model.getObjectByName('PickguardMesh');
-  const pick = model.getObjectByName('Pick');
+	const body = model.getObjectByName('Body');
+	const pickguard = model.getObjectByName('Pickguard');
+	const pickguardMesh = model.getObjectByName('PickguardMesh');
+	const pick = model.getObjectByName('Pick');
 
-  config = {
-    bodyColor: '#f5f5f5',
-    pickGuardColor: '#782121',
-    showPickguard: true,
-    showPick: true,
-  };
+	config = {
+		// Bass
+		bodyColor: '#f5f5f5',
+		pickGuardColor: '#782121',
+		showPickguard: true,
+		showPick: true,
 
-  if (body) body.material = body.material.clone();
+		// Environment
+		backgroundColor: '#0f0f0f',
+		floorColor: '#0f0f0f',
+		floorVisible: true,
+	};
 
-  const applyConfig = () => {
-    if (body) body.material.color.set(config.bodyColor);
-    if (pickguardMesh) pickguardMesh.material.color.set(config.pickGuardColor);
-    if (pickguard) pickguard.visible = config.showPickguard;
-    if (pick) pick.visible = config.showPick;
-  };
+	if (body) body.material = body.material.clone();
 
-  applyConfig();
+	const applyConfig = () => {
+		// Bass
+		if (body) body.material.color.set(config.bodyColor);
+		if (pickguardMesh) pickguardMesh.material.color.set(config.pickGuardColor);
+		if (pickguard) pickguard.visible = config.showPickguard;
+		if (pick) pick.visible = config.showPick;
 
-  gui = new GUI();
-  gui.addColor(config, 'bodyColor').name('Body Color').onChange(applyConfig);
-  gui
-    .addColor(config, 'pickGuardColor')
-    .name('Pickguard Color')
-    .onChange(applyConfig);
-  gui.add(config, 'showPickguard').name('Show Pickguard').onChange(applyConfig);
-  gui.add(config, 'showPick').name('Show Pick').onChange(applyConfig);
+		// Background
+		scene.background = new THREE.Color(config.backgroundColor);
+
+		// Floor
+		if (floor) {
+			floor.material.color.set(config.floorColor);
+			floor.visible = config.floorVisible;
+		}
+	};
+
+	applyConfig();
+
+	gui = new GUI();
+
+	// === BACKGROUND / ENVIRONMENT SECTION ===
+	const backgroundFolder = gui.addFolder('Background');
+	backgroundFolder
+		.addColor(config, 'backgroundColor')
+		.name('Background Color')
+		.onChange(applyConfig);
+
+	backgroundFolder
+		.addColor(config, 'floorColor')
+		.name('Floor Color')
+		.onChange(applyConfig);
+
+	backgroundFolder
+		.add(config, 'floorVisible')
+		.name('Show Floor')
+		.onChange(applyConfig);
+
+	// === BASS SECTION ===
+	const bassFolder = gui.addFolder('Bass');
+	bassFolder
+		.addColor(config, 'bodyColor')
+		.name('Body Color')
+		.onChange(applyConfig);
+
+	bassFolder
+		.addColor(config, 'pickGuardColor')
+		.name('Pickguard Color')
+		.onChange(applyConfig);
+
+	bassFolder
+		.add(config, 'showPickguard')
+		.name('Show Pickguard')
+		.onChange(applyConfig);
+
+	bassFolder
+		.add(config, 'showPick')
+		.name('Show Pick')
+		.onChange(applyConfig);
+
+	// Open both folders by default
+	backgroundFolder.open();
+	bassFolder.open();
 }
 
 // === RENDER LOOP ===
 function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+	requestAnimationFrame(animate);
+	controls.update();
+	renderer.render(scene, camera);
 }
 animate();
 
@@ -130,7 +187,7 @@ animate();
 
 // === RESIZE ===
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize(window.innerWidth, window.innerHeight);
 });
